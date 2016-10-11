@@ -1,5 +1,4 @@
 # mongoose-summarize
-Making denormalization fun (or at least manageable)
 
 To minimize populates and improve performance, we dereference data that is accessed frequently and is changed seldom.
 

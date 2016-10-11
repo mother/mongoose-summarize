@@ -1,0 +1,13 @@
+{
+  "name": "mongoose-summarize",
+  "private": "true",
+  "version": "0.0.1",
+  "engine": "node 6.4.0",
+  "scripts": {
+  },
+  "dependencies": {
+    "mongoose": "^4.6.3"
+  },
+  "devDependencies": {
+  }
+}

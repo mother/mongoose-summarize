@@ -6,12 +6,11 @@ const setup = require('./setup')
 const summarize = require('../')
 
 const User = mongoose.model('user', require('./schemas/user'))
-const UserSummary = mongoose.model('user.summary', require('./schemas/user.summary'))
 const Comment = mongoose.model('comment', require('./schemas/comment')).listenForSourceChanges()
 
 const WAIT_TIME = ms('500ms')
 
-describe('Test Summarize - ', function () {
+describe('Test Summarize:', function () {
    this.timeout(15000)
    const userData = {
       email: 'test@testing.com',
@@ -219,5 +218,14 @@ describe('Test Summarize - ', function () {
 
          done()
       })
+   })
+
+   it('error on having a summary schema with no `_id` field', () => {
+      const SummaryScheme = new mongoose.Schema({ name: String })
+      const TestScheme = new mongoose.Schema({ test: SummaryScheme })
+
+      const options = { field: 'test', ref_model: User }
+      expect(summarize.bind(this, TestScheme, options)).to.throw(Error,
+         /field in the summary schema in the/)
    })
 })

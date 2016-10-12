@@ -64,6 +64,13 @@ const updateSummaries = (originalDoc, next) => {
 
 const summarize = function (subscriberSchema, options) {
    const refModelName = options.ref_model.modelName
+   const summarySchema = subscriberSchema.obj[options.field].obj
+
+   // Enforce having an required _id field in the summary schema
+   if (!summarySchema._id || (summarySchema._id.schemaName === 'ObjectId' && summarySchema._id.required === true)) {
+      throw new Error('The schema requires an `_id` field in the summary schema in the `' +
+         options.field + '` field.')
+   }
 
    // Ensure population of field
    subscriberSchema.pre('validate', function (next) {

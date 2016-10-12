@@ -12,10 +12,10 @@ const defineSummarySource = function (originalSchema) {
       const subscribers = map[model.modelName]
 
       subscribers.forEach(subscriber => {
-         const conditions = { [subscriber.path + '._id']: originalDoc._id }
+         const conditions = { [subscriber.field + '._id']: originalDoc._id }
          const doc = {}
-         doc[subscriber.path] = originalDoc
-         doc[subscriber.path]._id = originalDoc._id
+         doc[subscriber.field] = originalDoc
+         doc[subscriber.field]._id = originalDoc._id
          console.log('updates', subscriber.model.modelName, conditions, require('util').inspect(doc, null, null) )
 
          subscriber.model.update(conditions, doc, { multi: true, runValidators: true, overwrite: false }, function() {
@@ -27,9 +27,12 @@ const defineSummarySource = function (originalSchema) {
 
 const summarize = function (subscriberSchema, options) {
    // Ensure population of field
-   // subscriberSchema.pre('validate', function() {
-   //
-   // })
+   subscriberSchema.pre('validate', function (originalDoc) {
+      const model = this
+      console.log(originalDoc)
+      originalDoc[options.field] = model[options.field].findById(originalDoc[options.field])
+      console.log(originalDoc)
+   })
 
    subscriberSchema.statics.listenForSourceChanges = function () {
       const model = this
@@ -37,7 +40,7 @@ const summarize = function (subscriberSchema, options) {
 
       subscribers.push({
          model: model,
-         path: options.path
+         field: options.field
       })
 
       map[options.ref] = subscribers

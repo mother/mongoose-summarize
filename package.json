@@ -5,12 +5,14 @@
   "engine": "node 6.4.0",
   "scripts": {},
   "dependencies": {
+    "mongodb": "2.2.10",
     "mongoose": "^4.6.3"
   },
   "devDependencies": {
+    "chai": "3.5.0",
     "mocha": "3.1.2",
     "mockgoose": "6.0.8",
     "mongoose": "4.6.3",
-    "power-assert": "1.4.1"
+    "ms": "0.7.1"
   }
 }

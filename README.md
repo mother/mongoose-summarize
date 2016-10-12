@@ -9,25 +9,24 @@ Take the User schema for example.
 ````
 const UserSchema = new Schema({
 
-   email                   : { type : String, required : true },
-   phone                   : { type : String },
-   name                    : {
-      first                : { type : String, required : true },
-      last                 : { type : String, required : true },
-      full                 : { type : String, trim : true, index : true }
+   email: { type: String, required: true },
+   phone: { type: String },
+   name: {
+      first: { type: String, required: true },
+      last: { type: String, required: true }
    },
 
-   avatar                  : {
-      file                 : { type : Schema.Types.ObjectId, ref : 'file' },
-      url                  : { type : String } // generated
+   avatar: {
+      file: { type: Schema.Types.ObjectId, ref: 'file' },
+      url: { type: String } // generated
    },
 
-   password                : {
-      encrypted_password   : { type : String },
-      reset_request        : {
-         code              : { type : String, trim : true },
-         date              : { type : Date },
-         expires           : { type : Date }
+   password: {
+      encrypted_password: { type: String },
+      reset_request: {
+         code: { type: String, trim: true },
+         date: { type: Date },
+         expires: { type: Date }
       }
    },
 
@@ -37,16 +36,16 @@ const UserSchema = new Schema({
 When other collections contain dereferenced user data, they do not need to store all user data obviously. Let's say only the name and avatar need to be stored. We can let our plugin to only store these fields when the user is being dereferenced (the "summary"):
 
 ````
-const UserSummarySchema = {
-   name        : {
-      first    : { type : String, trim : true },
-      last     : { type : String, trim : true },
-      full     : { type : String, trim : true }
+const UserSummarySchema = new Schema({
+   _id: { type: Schema.Types.ObjectId, required: true },
+   name: {
+      first: { type: String, trim: true },
+      last: { type: String, trim: true }
    },
-   avatar      : {
-      url      : { type : String }
+   avatar: {
+      url: { type: String }
    }
-}
+})
 
 module.exports = exports = UserSummarySchema
 ````
@@ -68,7 +67,8 @@ const CommentSchema = new Schema({
    }
 })
 
-CommentSchema.plugin(summarize, { path: 'author', ref: 'user' })
+const User = mongoose.model('user', UserSchema)
+CommentSchema.plugin(summarize, { field: 'author', ref_model: User })
 
 mongoose.model('comment', CommentSchema).listenForSourceChanges()
 ````
@@ -80,7 +80,7 @@ TODO:
 - [ ] Check if relevant fields were actually modified
 - [ ] Autoindex dependencies
 - [ ] Remove options
-- [ ] Enforce _id: { type : Schema.Types.ObjectId, required: true }
+- [ ] Enforce _id: { type: Schema.Types.ObjectId, required: true }
 - [ ] Add 'updated' timestamp to summary documents automatically
 - [ ] Handle mis-syncronization
 - [ ] Nested Summarizations?

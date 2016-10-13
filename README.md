@@ -67,11 +67,14 @@ const CommentSchema = new Schema({
    }
 })
 
-const User = mongoose.model('user', UserSchema)
-CommentSchema.plugin(summarize, { field: 'author', ref_model: User })
-
 mongoose.model('comment', CommentSchema).listenForSourceChanges()
 ````
+
+After you have include your reference models, you set the plugin as follows:
+```
+const User = mongoose.model('user')
+CommentSchema.plugin(summarize, { field: 'author', ref_model: User })
+```
 
 This plugin will setup a pub/sub system so that anytime a document in the source collection (eg. users) is updated, the plugin can optionally do batch updates on the schemas that use the summaries to ensure dereferenced data is kept up to date. This should be fairly performant if we setup indeces on the id field of summary documents.
 

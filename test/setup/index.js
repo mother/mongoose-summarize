@@ -1,6 +1,9 @@
 const mongoose = require('mongoose')
-mongoose.Promise = global.Promise
 const mockgoose = require('mockgoose')
+
+require('./models')
+
+mongoose.Promise = global.Promise
 
 module.exports = exports = (done) => {
    mockgoose(mongoose).then(() => {

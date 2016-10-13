@@ -5,8 +5,8 @@ const ms = require('ms')
 const setup = require('./setup')
 const summarize = require('../')
 
-const User = mongoose.model('user', require('./schemas/user'))
-const Comment = mongoose.model('comment', require('./schemas/comment')).listenForSourceChanges()
+const User = mongoose.model('user')
+const Comment = mongoose.model('comment')
 
 const WAIT_TIME = ms('500ms')
 
@@ -38,7 +38,7 @@ describe('Test Summarize:', function () {
          }
 
          newComment = new Comment({
-            author: { _id: user._id },
+            author: { _id: newUser._id },
             body: commentText
          })
          newComment.save(done)
@@ -69,20 +69,11 @@ describe('Test Summarize:', function () {
       })
    })
 
-   // TODO: Fix
    it('pre-validatation of a comment - using author\'s info', (done) => {
       setTimeout(() => {
-         // Comment.find({}, (e, c) => {
-         //    console.log('~~~~~~~~~~', c[0])
-         // })
-
          Comment.findOne({
-            'author.name': {
-               $elemMatch: {
-                  first: newUser.name.first,
-                  last: newUser.name.last
-               }
-            }
+            'author.name.first': newUser.name.first,
+            'author.name.last': newUser.name.last
          }, (err, comment) => {
             expect(err).to.not.be.ok
             expect(comment).to.be.ok
@@ -177,7 +168,7 @@ describe('Test Summarize:', function () {
       })
    })
 
-   // TODO: Is there any way to run plugin for `on update` calls?
+   // TODO: Is there any way to run plugin for `on update` calls? If yes, uncomment the following test
    // it('modifying the reference collection updates the summary using `update`', (done) => {
    //    User.update({ _id: newUser._id }, {
    //       'name.first': firstName,

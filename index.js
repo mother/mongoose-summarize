@@ -5,21 +5,14 @@ const map = {}
 // TODO: Check if relevant fields were actually modified
 // TODO: Autoindex dependencies
 // TODO: Remove options
-// TODO: Enforce _id: { type : Schema.Types.ObjectId, required: true }
+// TODO: How to update when update is called.
 
 const defineSummarySource = (originalSchema) => {
    // fires on save() and create()
    originalSchema.post('save', updateSummaries)
 
+   // fires on any find and update calls
    originalSchema.post('findOneAndUpdate', updateSummaries)
-   originalSchema.post('findByIdAndUpdate', updateSummaries)
-
-   // TODO: How to update when update is called.
-   // originalSchema.post('update', (modified, next) => {
-   //    console.log('called update', modified.toString())
-
-   //    updateSummaries(modified, next)
-   // })
 }
 
 const updateSummaries = (originalDoc, next) => {
@@ -37,19 +30,7 @@ const updateSummaries = (originalDoc, next) => {
       doc[subscriber.field]._id = originalDoc._id
       // console.log('updates', subscriber.model.modelName, conditions, require('util').inspect(doc, null, null) )
 
-      // Driver usage?
-      // mongoose.connection.db.collection(subscriber.model.modelName, (err, collection) => {
-      //    if (err) {
-      //       return next(err)
-      //    }
-
-      //    collection.update(conditions, doc, {
-      //       multi: true,
-      //       runValidators: true,
-      //       overwrite: false
-      //    })
-      // })
-      subscriber.model.update(conditions, doc, {
+      subscriber.model.findOneAndUpdate(conditions, doc, {
          multi: true,
          runValidators: true,
          overwrite: false

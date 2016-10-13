@@ -168,33 +168,50 @@ describe('Test Summarize:', function () {
       })
    })
 
-   // TODO: Is there any way to run plugin for `on update` calls? If yes, uncomment the following test
-   // it('modifying the reference collection updates the summary using `update`', (done) => {
-   //    User.update({ _id: newUser._id }, {
-   //       'name.first': firstName,
-   //       'avatar.url': url,
-   //       phone: phone
-   //    }, (err) => {
-   //       if (err) {
-   //          return done(err)
-   //       }
+   it('multiple summaries from a schema', (done) => {
+      const NewComment = mongoose.model('new_comment', require('./schemas/comment')).listenForSourceChanges()
+      const newCommentText1 = 'new comment!'
+      const newCommentText2 = 'new comment again!'
 
-   //       setTimeout(() => {
-   //          Comment.findOne({ 'author._id': newUser._id }, (error, comment) => {
-   //             expect(error).to.not.be.ok
-   //             expect(comment).to.be.ok
-   //             expect(comment.author.name.first).to.equal(firstName)
-   //             expect(comment.author.name.first).to.not.equal(newUser.name.first)
-   //             expect(comment.author.name.last).to.equal(newUser.name.last)
-   //             expect(comment.author.avatar.url).to.equal(url)
-   //             expect(comment.author.avatar.url).to.not.equal(undefined)
-   //             expect(comment.body).to.equal(commentText)
+      newComment = new NewComment({
+         author: { _id: newUser._id },
+         body: newCommentText1
+      })
+      newComment.save()
 
-   //             done(error)
-   //          })
-   //       }, WAIT_TIME)
-   //    })
-   // })
+      comment = new Comment({
+         author: { _id: newUser._id },
+         body: newCommentText2
+      })
+      comment.save()
+
+      setTimeout(() => {
+         NewComment.findOne({
+            'author._id': newUser._id,
+            body: newCommentText1
+         }, (err, comment) => {
+            expect(err).to.not.be.ok
+            expect(comment).to.be.ok
+            expect(comment.author.name.first).to.equal(newUser.name.first)
+            expect(comment.author.name.last).to.equal(newUser.name.last)
+            expect(comment.author.avatar.url).to.equal(undefined)
+
+            Comment.findOne({
+               'author._id': newUser._id,
+               body: newCommentText2
+            }, (err, comment) => {
+               expect(err).to.not.be.ok
+               expect(comment).to.be.ok
+               expect(comment.author.name.first).to.equal(newUser.name.first)
+               expect(comment.author.name.last).to.equal(newUser.name.last)
+               expect(comment.author.avatar.url).to.equal(undefined)
+
+               done(err)
+            })
+         })
+      }, WAIT_TIME)
+
+   })
 
    it('error on non-existing user document', (done) => {
       newComment = new Comment({

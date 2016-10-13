@@ -7,7 +7,7 @@ To make it very easy to manage dereferenced data, we invented a technique and a 
 Take the User schema for example.
 
 ````
-const UserSchema = new Schema({
+const UserSchema = new mongoose.Schema({
 
    email: { type: String, required: true },
    phone: { type: String },
@@ -36,7 +36,7 @@ const UserSchema = new Schema({
 When other collections contain dereferenced user data, they do not need to store all user data obviously. Let's say only the name and avatar need to be stored. We can let our plugin to only store these fields when the user is being dereferenced (the "summary"):
 
 ````
-const UserSummarySchema = new Schema({
+const UserSummarySchema = new mongoose.Schema({
    _id: { type: Schema.Types.ObjectId, required: true },
    name: {
       first: { type: String, trim: true },
@@ -56,10 +56,16 @@ And then in the original schema:
 UserSchema.plugin(summarize.defineSummarySource)
 ````
 
+For creating the original model from the above schema:
+
+```
+const UserSchema = require('<PATH_TO_SCHEMAS>/user')
+mongoose.model('user', UserSchema).listenForUpdates()
+```
 Then to use the summary in another schema:
 
 ````
-const CommentSchema = new Schema({
+const CommentSchema = new mongoose.Schema({
    author: UserSummarySchema,
    body: { type: String },
    added: {
@@ -67,14 +73,10 @@ const CommentSchema = new Schema({
    }
 })
 
+CommentSchema.plugin(summarize, { field: 'author', ref: 'user' })
+
 mongoose.model('comment', CommentSchema).listenForSourceChanges()
 ````
-
-After you have include your reference models, you set the plugin as follows:
-```
-const User = mongoose.model('user')
-CommentSchema.plugin(summarize, { field: 'author', ref_model: User })
-```
 
 This plugin will setup a pub/sub system so that anytime a document in the source collection (eg. users) is updated, the plugin can optionally do batch updates on the schemas that use the summaries to ensure dereferenced data is kept up to date. This should be fairly performant if we setup indeces on the id field of summary documents.
 
@@ -83,7 +85,7 @@ TODO:
 - [ ] Check if relevant fields were actually modified
 - [ ] Autoindex dependencies
 - [ ] Remove options
-- [ ] Enforce _id: { type: Schema.Types.ObjectId, required: true }
+- [ ] Update summaries on mongoose `update` call
 - [ ] Add 'updated' timestamp to summary documents automatically
 - [ ] Handle mis-syncronization
 - [ ] Nested Summarizations?

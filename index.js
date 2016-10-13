@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
-const map = {}
+const refMap = {}
+const summaryMap = {}
 
 // TODO: Check schema strictness
 // TODO: Check if relevant fields were actually modified
@@ -8,6 +9,12 @@ const map = {}
 // TODO: How to update when update is called.
 
 const defineSummarySource = (originalSchema) => {
+
+   originalSchema.statics.listenForUpdates = function () {
+      const model = this
+      refMap[model.modelName] = model
+   }
+
    // fires on save() and create()
    originalSchema.post('save', updateSummaries)
 
@@ -17,7 +24,7 @@ const defineSummarySource = (originalSchema) => {
 
 const updateSummaries = (originalDoc, next) => {
    const model = originalDoc.constructor
-   const subscribers = map[model.modelName]
+   const subscribers = summaryMap[model.modelName]
 
    if (!subscribers) {
       return next()
@@ -44,7 +51,6 @@ const updateSummaries = (originalDoc, next) => {
 }
 
 const summarize = function (subscriberSchema, options) {
-   const refModelName = options.ref_model.modelName
    const summarySchema = subscriberSchema.obj[options.field].obj
 
    // Enforce having an required _id field in the summary schema
@@ -57,14 +63,15 @@ const summarize = function (subscriberSchema, options) {
    subscriberSchema.pre('validate', function (next) {
       const originalDoc = this
       const docId = originalDoc[options.field]._id
+      const refModel = refMap[options.ref]
 
-      options.ref_model.findById(docId, (err, refDoc) => {
+      refModel.findById(docId, (err, refDoc) => {
          if (err) {
             return next(err)
          }
 
          if (!refDoc) {
-            return next(new Error('No document found in the ' + refModelName + ' reference with _id ' + docId))
+            return next(new Error('No document found in the ' + refModel.modelName + ' reference with _id ' + docId))
          }
 
          originalDoc[options.field] = refDoc
@@ -74,14 +81,14 @@ const summarize = function (subscriberSchema, options) {
 
    subscriberSchema.statics.listenForSourceChanges = function () {
       const model = this
-      const subscribers = map[refModelName] || []
+      const subscribers = summaryMap[options.ref] || []
 
       subscribers.push({
          model: model,
          field: options.field
       })
 
-      map[refModelName] = subscribers
+      summaryMap[options.ref] = subscribers
       return model
    }
 }

@@ -2,11 +2,13 @@ const expect = require('chai').expect
 const mongoose = require('mongoose')
 const ms = require('ms')
 
-const setup = require('./setup')
+const config = require('./config')
 const summarize = require('../')
 
 const User = mongoose.model('user')
 const Comment = mongoose.model('comment')
+const setup = config.setup
+const teardown = config.teardown
 
 const WAIT_TIME = ms('500ms')
 
@@ -45,6 +47,7 @@ describe('Test Summarize:', function () {
       })
    })
 
+   after(teardown)
    afterEach((done) => { newUser.remove(done) })
 
    it('Should save a reference document', (done) => {

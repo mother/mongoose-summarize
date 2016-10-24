@@ -13,7 +13,7 @@ const UserSchema = new Schema({
       file: { type: Schema.Types.ObjectId, ref: 'file' },
       url: { type: String } // generated
    },
-   password: {
+   credentials: {
       encrypted_password: { type: String },
       reset_request: {
          code: { type: String, trim: true },

@@ -21,7 +21,7 @@ const UserSchema = new mongoose.Schema({
       url: { type: String } // generated
    },
 
-   password: {
+   credentials: {
       encrypted_password: { type: String },
       reset_request: {
          code: { type: String, trim: true },

@@ -35,19 +35,11 @@ const updateSummaries = (originalDoc, next) => {
       const doc = {}
       doc[subscriber.field] = originalDoc
       doc[subscriber.field]._id = originalDoc._id
-      // console.log('updates', subscriber.model.modelName, conditions, require('util').inspect(doc, null, null) )
-
-      // TODO: After the issue #4621 in the mongoose project was answered, this line should be updated to use `update` call.
-      // Issue link: https://github.com/Automattic/mongoose/issues/4621
-      subscriber.model.find(conditions, function(err, docsToUpdate) {
+   
+      subscriber.model.update(conditions, doc, { multi: true }, function(err) {
          if (err) {
             return next()
          }
-
-         docsToUpdate.forEach(d => {
-             d.set(doc)
-             d.save()
-         })
       })
    })
    next()

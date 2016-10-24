@@ -21,7 +21,7 @@ describe('Test Summarize:', function () {
          last: 'Testing',
          full: 'Test Testing'
       },
-      'password.encrypted_password': 'X13$sWtP'
+      'credentials.encrypted_password': 'X13$sWtP'
    }
    const commentText = 'This is a test comment'
    const firstName = 'newTest'

@@ -12,6 +12,6 @@ const CommentSchema = new Schema({
    }
 })
 
-CommentSchema.plugin(summarize, { field: 'author', ref: 'user' })
+CommentSchema.plugin(summarize, { path: 'author', ref: 'user' })
 
 module.exports = exports = CommentSchema

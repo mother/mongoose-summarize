@@ -286,12 +286,12 @@ describe('Test Summarize:', function () {
       })
    })
 
-   it('Should give error on having a summary schema with no `_id` field', () => {
+   it('Should give error on having a summary schema with no `_id` path', () => {
       const SummaryScheme = new mongoose.Schema({ name: String })
       const TestScheme = new mongoose.Schema({ test: SummaryScheme })
 
-      const options = { field: 'test', ref_model: User }
+      const options = { path: 'test', ref_model: User }
       expect(summarize.bind(this, TestScheme, options)).to.throw(Error,
-         /field in the summary schema in the/)
+         /path in the summary schema in the/)
    })
 })

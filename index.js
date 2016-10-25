@@ -1,12 +1,12 @@
 const mongoose = require('mongoose')
-const refMap = {}
-const summaryMap = {}
+const modelMap = {}
+const subscriberMap = {}
 
 const defineSummarySource = (originalSchema) => {
 
    originalSchema.statics.listenForUpdates = function () {
       const model = this
-      refMap[model.modelName] = model
+      modelMap[model.modelName] = model
    }
 
    // Fires on save and create events
@@ -28,17 +28,17 @@ const defineSummarySource = (originalSchema) => {
 
 const updateSummaries = (sourceDoc) => {
    const sourceModel = sourceDoc.constructor
-   const subscribers = summaryMap[sourceModel.modelName]
+   const subscribers = subscriberMap[sourceModel.modelName]
 
    if (!subscribers) {
       return
    }
 
    subscribers.forEach(subscriber => {
-      const conditions = { [subscriber.field + '._id']: sourceDoc._id }
+      const conditions = { [subscriber.path + '._id']: sourceDoc._id }
       const doc = {}
-      doc[subscriber.field] = sourceDoc
-      doc[subscriber.field]._id = sourceDoc._id
+      doc[subscriber.path] = sourceDoc
+      doc[subscriber.path]._id = sourceDoc._id
 
       subscriber.model.update(conditions, doc, { multi: true }, function(err) {
          if (err) return
@@ -47,23 +47,23 @@ const updateSummaries = (sourceDoc) => {
 }
 
 const summarize = function (subscriberSchema, options) {
-   const summarySchema = subscriberSchema.obj[options.field]
+   const summarySchema = subscriberSchema.obj[options.path]
 
-   // Enforce having a required _id field in the summary schema
+   // Enforce having a required _id path in the summary schema
    if (!summarySchema.path('_id') || summarySchema.path('_id').options.required !== true) {
-      throw new Error('The schema requires an `_id` field in the summary schema in the `' +
-         options.field + '` field.')
+      throw new Error('The schema requires an `_id` path in the summary schema in the `' +
+         options.path + '` path.')
    }
 
    // Ensure _id is indexed for quick querying
    // TODO: Document this, so developer is not surprised
    summarySchema.index({ _id: 1 })
 
-   // Ensure population of field
+   // Set summary doc
    subscriberSchema.pre('validate', function (next) {
       const originalDoc = this
-      const docId = originalDoc[options.field]._id
-      const refModel = refMap[options.ref]
+      const docId = originalDoc[options.path]._id
+      const refModel = modelMap[options.ref]
 
       refModel.findById(docId, (err, refDoc) => {
          if (err) {
@@ -74,21 +74,21 @@ const summarize = function (subscriberSchema, options) {
             return next(new Error('No document found in the ' + refModel.modelName + ' reference with _id ' + docId))
          }
 
-         originalDoc[options.field] = refDoc
+         originalDoc[options.path] = refDoc
          next()
       })
    })
 
    subscriberSchema.statics.listenForSourceChanges = function () {
       const model = this
-      const subscribers = summaryMap[options.ref] || []
+      const subscribers = subscriberMap[options.ref] || []
 
       subscribers.push({
          model: model,
-         field: options.field
+         path: options.path
       })
 
-      summaryMap[options.ref] = subscribers
+      subscriberMap[options.ref] = subscribers
       return model
    }
 }

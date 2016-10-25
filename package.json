@@ -1,8 +1,23 @@
 {
   "name": "mongoose-summarize",
-  "private": "true",
+  "main": "index.js",
+  "description": "Making denormalization fun (or at least manageable)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mother/mongoose-summarize.git"
+  },
+  "keywords": [
+    "mongoose",
+    "summarize",
+    "denormalize"
+  ],
+  "author": "Ajay Sabhaney",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mother/mongoose-summarize/issues"
+  },
   "version": "0.0.1",
-  "engine": "node 6.4.0",
+  "engine": "node 6.x.x",
   "scripts": {
      "tests": "NODE_ENV=test ./node_modules/mocha/bin/mocha ./tests/index.js"
   },

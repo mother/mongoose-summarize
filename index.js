@@ -2,12 +2,6 @@ const mongoose = require('mongoose')
 const refMap = {}
 const summaryMap = {}
 
-// TODO: Check schema strictness
-// TODO: Check if relevant fields were actually modified
-// TODO: Autoindex dependencies
-// TODO: Remove options
-// TODO: How to update when update is called.
-
 const defineSummarySource = (originalSchema) => {
 
    originalSchema.statics.listenForUpdates = function () {
@@ -15,44 +9,55 @@ const defineSummarySource = (originalSchema) => {
       refMap[model.modelName] = model
    }
 
-   // fires on save() and create()
+   // Fires on save and create events
    originalSchema.post('save', updateSummaries)
 
-   // fires on any find and update calls
+   // Fires on any findAndUpdate calls
    originalSchema.post('findOneAndUpdate', updateSummaries)
+
+   // Fires on update query
+   originalSchema.post('update', function() {
+      const query = this.getQuery()
+      const model = this.model // This is using an undocumented property from Query :(
+      model.find(query).exec((err, results) => {
+         if (err) return
+         results.forEach(updateSummaries)
+      })
+   })
 }
 
-const updateSummaries = (originalDoc, next) => {
-   const model = originalDoc.constructor
-   const subscribers = summaryMap[model.modelName]
+const updateSummaries = (sourceDoc) => {
+   const sourceModel = sourceDoc.constructor
+   const subscribers = summaryMap[sourceModel.modelName]
 
    if (!subscribers) {
-      return next()
+      return
    }
 
    subscribers.forEach(subscriber => {
-      const conditions = { [subscriber.field + '._id']: originalDoc._id }
+      const conditions = { [subscriber.field + '._id']: sourceDoc._id }
       const doc = {}
-      doc[subscriber.field] = originalDoc
-      doc[subscriber.field]._id = originalDoc._id
-   
+      doc[subscriber.field] = sourceDoc
+      doc[subscriber.field]._id = sourceDoc._id
+
       subscriber.model.update(conditions, doc, { multi: true }, function(err) {
-         if (err) {
-            return next()
-         }
+         if (err) return
       })
    })
-   next()
 }
 
 const summarize = function (subscriberSchema, options) {
-   const summarySchema = subscriberSchema.obj[options.field].obj
+   const summarySchema = subscriberSchema.obj[options.field]
 
-   // Enforce having an required _id field in the summary schema
-   if (!summarySchema._id || (summarySchema._id.schemaName === 'ObjectId' && summarySchema._id.required === true)) {
+   // Enforce having a required _id field in the summary schema
+   if (!summarySchema.path('_id') || summarySchema.path('_id').options.required !== true) {
       throw new Error('The schema requires an `_id` field in the summary schema in the `' +
          options.field + '` field.')
    }
+
+   // Ensure _id is indexed for quick querying
+   // TODO: Document this, so developer is not surprised
+   summarySchema.index({ _id: 1 })
 
    // Ensure population of field
    subscriberSchema.pre('validate', function (next) {

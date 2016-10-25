@@ -15,16 +15,16 @@ const WAIT_TIME = ms('500ms')
 describe('Test Summarize:', function () {
    this.timeout(15000)
    const userData = {
-      email: 'test@testing.com',
+      email: 'oldie@test.com',
       name: {
-         first: 'Test',
-         last: 'Testing',
-         full: 'Test Testing'
+         first: 'Oldie',
+         last: 'McGoldie',
+         full: 'Oldie Mcgoldie'
       },
       'credentials.encrypted_password': 'X13$sWtP'
    }
    const commentText = 'This is a test comment'
-   const firstName = 'newTest'
+   const firstName = 'Newby'
    const url = 'http://test.com/img.jpg'
    const phone = '123-456-7890'
    let newUser
@@ -156,6 +156,31 @@ describe('Test Summarize:', function () {
                expect(comment.author.name.first).to.not.equal(newUser.name.first)
                expect(comment.author.name.last).to.equal(newUser.name.last)
                expect(comment.author.avatar.url).to.equal(user.avatar.url)
+               expect(comment.author.avatar.url).to.not.equal(undefined)
+               expect(comment.body).to.equal(commentText)
+
+               done(error)
+            })
+         }, WAIT_TIME)
+      })
+   })
+
+   it('Should updates the summary when using `update` on the reference model', (done) => {
+      User.update({ _id: newUser._id }, {
+         'name.first': firstName,
+         'avatar.url': url,
+         phone: phone
+      }, { multi: true }, (err) => {
+         expect(err).to.not.be.ok
+
+         setTimeout(() => {
+            Comment.findOne({ 'author._id': newUser._id }, (error, comment) => {
+               expect(error).to.not.be.ok
+               expect(comment).to.be.ok
+               expect(comment.author.name.first).to.equal(firstName)
+               expect(comment.author.name.first).to.not.equal(newUser.name.first)
+               expect(comment.author.name.last).to.equal(newUser.name.last)
+               expect(comment.author.avatar.url).to.equal(url)
                expect(comment.author.avatar.url).to.not.equal(undefined)
                expect(comment.body).to.equal(commentText)
 

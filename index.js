@@ -1,46 +1,94 @@
-const map = {}
+const mongoose = require('mongoose')
+const modelMap = {}
+const subscriberMap = {}
 
-// TODO: Check schema strictness
-// TODO: Check if relevant fields were actually modified
-// TODO: Autoindex dependencies
-// TODO: Remove options
-// TODO: Enforce _id: { type : Schema.Types.ObjectId, required: true }
+const defineSummarySource = (originalSchema) => {
 
-const defineSummarySource = function (originalSchema) {
-   originalSchema.post('save', (originalDoc) => {
-      const model = originalDoc.constructor
-      const subscribers = map[model.modelName]
+   originalSchema.statics.listenForUpdates = function () {
+      const model = this
+      modelMap[model.modelName] = model
+   }
 
-      subscribers.forEach(subscriber => {
-         const conditions = { [subscriber.path + '._id']: originalDoc._id }
-         const doc = {}
-         doc[subscriber.path] = originalDoc
-         doc[subscriber.path]._id = originalDoc._id
-         console.log('updates', subscriber.model.modelName, conditions, require('util').inspect(doc, null, null) )
+   // Fires on save and create events
+   originalSchema.post('save', updateSummaries)
 
-         subscriber.model.update(conditions, doc, { multi: true, runValidators: true, overwrite: false }, function() {
-            console.log(arguments)
-         })
+   // Fires on any findAndUpdate calls
+   originalSchema.post('findOneAndUpdate', updateSummaries)
+
+   // Fires on update query
+   originalSchema.post('update', function() {
+      const query = this.getQuery()
+      const model = this.model // This is using an undocumented property from Query :(
+      model.find(query).exec((err, results) => {
+         if (err) return
+         results.forEach(updateSummaries)
+      })
+   })
+}
+
+const updateSummaries = (sourceDoc) => {
+   const sourceModel = sourceDoc.constructor
+   const subscribers = subscriberMap[sourceModel.modelName]
+
+   if (!subscribers) {
+      return
+   }
+
+   subscribers.forEach(subscriber => {
+      const conditions = { [subscriber.path + '._id']: sourceDoc._id }
+      const doc = {}
+      doc[subscriber.path] = sourceDoc
+      doc[subscriber.path]._id = sourceDoc._id
+
+      subscriber.model.update(conditions, doc, { multi: true }, function(err) {
+         if (err) return
       })
    })
 }
 
 const summarize = function (subscriberSchema, options) {
-   // Ensure population of field
-   // subscriberSchema.pre('validate', function() {
-   //
-   // })
+   const summarySchema = subscriberSchema.obj[options.path]
+
+   // Enforce having a required _id path in the summary schema
+   if (!summarySchema.path('_id') || summarySchema.path('_id').options.required !== true) {
+      throw new Error('The schema requires an `_id` path in the summary schema in the `' +
+         options.path + '` path.')
+   }
+
+   // Ensure _id is indexed for quick querying
+   // TODO: Document this, so developer is not surprised
+   summarySchema.index({ _id: 1 })
+
+   // Set summary doc
+   subscriberSchema.pre('validate', function (next) {
+      const originalDoc = this
+      const docId = originalDoc[options.path]._id
+      const refModel = modelMap[options.ref]
+
+      refModel.findById(docId, (err, refDoc) => {
+         if (err) {
+            return next(err)
+         }
+
+         if (!refDoc) {
+            return next(new Error('No document found in the ' + refModel.modelName + ' reference with _id ' + docId))
+         }
+
+         originalDoc[options.path] = refDoc
+         next()
+      })
+   })
 
    subscriberSchema.statics.listenForSourceChanges = function () {
       const model = this
-      const subscribers = map[options.ref] || []
+      const subscribers = subscriberMap[options.ref] || []
 
       subscribers.push({
          model: model,
          path: options.path
       })
 
-      map[options.ref] = subscribers
+      subscriberMap[options.ref] = subscribers
       return model
    }
 }

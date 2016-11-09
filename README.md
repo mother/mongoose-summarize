@@ -1,5 +1,9 @@
 # mongoose-summarize
 
+WIP
+
+Requires mongoose >= 4.6.5
+
 To minimize populates and improve query performance, we dereference data that is accessed frequently and is changed seldom.
 
 To make it very easy to manage dereferenced data, we created a technique and a plugin we call summarization.
